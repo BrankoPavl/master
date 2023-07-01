@@ -35,7 +35,7 @@ async function run(msg_data, topic_name){
 const arrayOfMeasurements = ["temperature", "humidity", "pm2"];
 const arrayOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Karaburma", "Dorcol"];
 const arrayOfTemperatures = ["10", "15", "20", "25", "30"];
-const arrayOfHumidities = ["40","65","80"];
+const arrayOfHumidities = ["40", "50","65","70"];
 const arrayOfPm2 = [25, 75, 100, 125];
 for(let index=0; index < 5; index++){ // will send 5 messages to kafka
     const indexOfLocation = Math.floor(Math.random() * arrayOfLocations.length);
