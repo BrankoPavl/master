@@ -3,6 +3,24 @@ const { createPool } = require('mysql')
 const cors = require("cors");
 const app = express();
 
+function makeMap(queryFromDB){
+    const currentMap = new Map();
+    const listOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Dorcol"];
+    listOfLocations.forEach((location) => {
+        let sumValue = 0;
+        let numberOfItems = 0;
+        queryFromDB.forEach((currentResult) => {
+            if ( currentResult.location == location ){
+                sumValue += currentResult.value;
+                numberOfItems +=1;
+            }
+        });
+        let average = sumValue/numberOfItems;
+        currentMap.set(location, average);
+    });
+    return currentMap;
+}
+
 app.use(cors());
 app.get("/data", (req, res) => {
     const pool = createPool({
@@ -13,108 +31,60 @@ app.get("/data", (req, res) => {
         insecureAuth: true
     })
 
-    function makeMap(queryFromDB){
-        const currentMap = new Map();
-        const listOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Dorcol"];
-        listOfLocations.forEach((location) => {
-            let sumValue = 0;
-            let numberOfItems = 0;
-            queryFromDB.forEach((currentResult) => {
-                if ( currentResult.location == location ){
-                    sumValue += currentResult.value;
-                    numberOfItems +=1;
+    let temperatureMap = new Map();
+    const temperatureQuery = new Promise((resolve, reject) => {
+            pool.query(`SELECT * FROM newTestTable WHERE measure = 'temperature';`, (err,resultTemperature) => {
+                if(err){
+                    reject(err)
+                } else {
+                console.log('Data is taken from database!')
+                temperatureMap = makeMap(resultTemperature)
+                resolve(temperatureMap)
                 }
             });
-            let average = sumValue/numberOfItems;
-            console.log(`for ${location}, average Temperature is ${average}`);
-            currentMap.set(location, average);
-        });
-        return currentMap;
-    }
-    let temperatureMap = new Map();
-    pool.query(`SELECT * FROM newTestTable WHERE measure = 'temperature';`, (err,resultTemperature, fields) => {
-        if(err){
-            return console.log(err)
-        }
-        console.log('Data is taken from database!')
-        // const listOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Dorcol"];
-        // listOfLocations.forEach((location) => {
-        //     let sumValue = 0;
-        //     let numberOfItems = 0;
-        //     resultTemperature.forEach((currentResult) => {
-        //         if ( currentResult.location == location ){
-        //             sumValue += currentResult.value;
-        //             numberOfItems +=1;
-        //         }
-        //     });
-        //     let average = sumValue/numberOfItems;
-        //     console.log(`for ${location}, average Temperature is ${average}`);
-        //     temperatureMap.set(location, average);
-        // });
-        temperatureMap = makeMap(resultTemperature)
-        temperatureMap.forEach((value, key) => {
-            console.log(`${key}: ${value}`);
-          });
-    })
+    });
 
     let pm2Map = new Map();
-    pool.query(`SELECT * FROM newTestTable WHERE measure = 'pm2';`, (err,resultPm2, fields) => {
-        if(err){
-            return console.log(err)
-        }
-        console.log('Data is taken from database!')
-        // const listOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Dorcol"];
-        // listOfLocations.forEach((location) => {
-        //     let sumValue = 0;
-        //     let numberOfItems = 0;
-        //     resultPm2.forEach((currentResult) => {
-        //         if ( currentResult.location == location ){
-        //             sumValue += currentResult.value;
-        //             numberOfItems +=1;
-        //         }
-        //     });
-        //     let average = sumValue/numberOfItems;
-        //     console.log(`for ${location}, average Pm2 is ${average}`);
-        //     pm2Map.set(location, average);
-        // });
-        pm2Map = makeMap(resultPm2)
-        pm2Map.forEach((value, key) => {
-            console.log(`${key}: ${value}`);
-        });
-    })
-
+    const pm2Query = new Promise((resolve, reject) => {
+            pool.query(`SELECT * FROM newTestTable WHERE measure = 'pm2';`, (err,resultPm2) => {
+                if(err){
+                    reject(err)
+                } else {
+                console.log('Data is taken from database!')
+                pm2Map = makeMap(resultPm2)
+                resolve(pm2Map)
+                }
+            })
+    });
     let humidityMap = new Map();
-    pool.query(`SELECT * FROM newTestTable WHERE measure = 'humidity';`, (err,resultHumidity, fields) => {
-        if(err){
-            return console.log(err)
-        }
-        console.log('Data is taken from database!')
-        // const listOfLocations = ["NoviBeograd", "Zemun", "Zvezdara", "Karaburma", "Autokomanda", "Vracar", "Palilula", "Ovca", "Dorcol"];
-        // listOfLocations.forEach((location) => {
-        //     let sumValue = 0;
-        //     let numberOfItems = 0;
-        //     resultHumidity.forEach((currentResult) => {
-        //         if ( currentResult.location == location ){
-        //             sumValue += currentResult.value;
-        //             numberOfItems +=1;
-        //         }
-        //     });
-        //     let average = sumValue/numberOfItems;
-        //     console.log(`for ${location}, average humidity is ${average}`);
-        //     humidityMap.set(location, average);
-        // });
-        humidityMap = makeMap(resultHumidity)
-        humidityMap.forEach((value, key) => {
-            console.log(`${key}: ${value}`);
-          });
+    const humidityQuery = new Promise((resolve, reject) => {
+            pool.query(`SELECT * FROM newTestTable WHERE measure = 'humidity';`, (err,resultHumidity) => {
+                if(err){
+                    reject(err);
+                } else {
+                    console.log('Data is taken from database!');
+                    humidityMap = makeMap(resultHumidity);
+                    resolve(humidityMap); 
+                }
 
+            })
+    });
+    Promise.all([temperatureQuery, pm2Query, humidityQuery])
+    .then(([temperatureMap, pm2Map, humidityMap]) => {
         const data = {
             pm2: Array.from(pm2Map.entries()).map(([location, value]) => ({ location, value })),
             humidity: Array.from(humidityMap.entries()).map(([location, value]) => ({ location, value })),
-            temperature:Array.from(temperatureMap.entries()).map(([location, value]) => ({ location, value }))
+            temperature: Array.from(temperatureMap.entries()).map(([location, value]) => ({ location, value }))
         };
         res.json(data);
     })
-      
+    .catch((error) => {
+      console.error('Error fetching data from the database:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    })
+    .finally(() => {
+      pool.end(); // Close the database connection
+    });
+
 });
 app.listen(3000, () => console.log("Server is listening to port 3000"));
