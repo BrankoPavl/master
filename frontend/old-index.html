@@ -1,0 +1,74 @@
+<html>
+<body>
+   <h2>Using the <i> fetch() browser method </i> to fetch data from API</h2>
+   <div id = "output"> </div>
+   <button onclick = "fetchData()"> Fetch API to get data </button> 
+
+   <div style="width: 400px; height: 300px;">
+      <canvas id="pm2Chart"></canvas>
+   </div>
+   <div id='humidityDiv' style="width: 400px; height: 300px;">
+      <canvas id="humidityChart"></canvas>
+   </div>
+
+   <!-- <div id ="chartContainer" style="width: 400px; height: 300px;">
+      <canvas id="myChart"></canvas>
+    </div> -->
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script>
+      let output = document.getElementById('output'); 
+      function fetchData() {
+         fetch('http://localhost:3000/data')
+         .then(response => response.json()) //??
+         .then(data => {
+               const pm2Data = data.pm2;
+               const humidityData = data.humidity;
+               // createChart('pm2Chart', 'level of pm2', pm2Data);
+               createChart('humidityDiv','humidityChart', 'level of humidity in %', humidityData);
+
+               function createChart(divId, chartId, labelOnChart, data) {
+                        const xlabels = [];
+                        const yvalues = [];
+                        Object.entries(data).forEach(([key, actualObject]) => { //pazii
+                           xlabels.push(`${actualObject.location}`);
+                           yvalues.push(`${actualObject.value}`);
+                        });
+                        console.log(xlabels);
+                        console.log(yvalues);
+// trenutno ne brise lepo prethodne cartove!!!! TJ brises ih sve!!
+                        const oldChart = document.getElementById(chartId);//brise prazan element prvi put!! a posle brise pun!!
+                        oldChart.parentNode.removeChild(chartId);
+                        const newCanvas = document.createElement('canvas');
+                        newCanvas.id = chartId;
+                        newCanvas.width = 400;
+                        newCanvas.height = 300;
+                        document.getElementById(divId).appendChild(newCanvas);
+                        
+                        new Chart(newCanvas, {
+                           type: 'line',
+                           data: {
+                              labels: xlabels,
+                              datasets: [{
+                              label: labelOnChart,
+                              data: yvalues,
+                              borderWidth: 1
+                              }]
+                           },
+                           options: {
+                              scales: {
+                              y: {
+                                 beginAtZero: true
+                              }
+                              }
+                           }
+                        });
+               }
+         })
+         .catch(error => {
+            console.error('Error:', error);
+         });
+                  
+      }
+   </script>
+</body>
+</html>

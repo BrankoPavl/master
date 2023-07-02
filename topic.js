@@ -10,7 +10,7 @@ async function run(topic_name){
     await admin.connect()
     console.log("Connected!")
     let arrayOfTopics = await admin.listTopics()
-    console.log(arrayOfTopics);
+    // console.log(arrayOfTopics);
     if( arrayOfTopics.includes(topic_name) ){
               await admin.disconnect();
               throw new Error('Topic you want to create already exist');
@@ -39,7 +39,7 @@ async function run(topic_name){
   }
   catch(ex){ console.error(`${ex}`); }
 }
-const topics = ["aaaaa"];
+const topics = ["temperature", "humidity", "pm2"];
 for(let i=0; i< topics.length; i++){
-run(topics[i]);
+    run(topics[i]);
 }
